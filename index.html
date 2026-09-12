@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ভার্সিটি 'খ' মডেল টেস্ট - ডিজিটাল OMR</title>
+    <style>
+        :root {
+            --primary: #d32f2f;
+            --primary-dark: #b71c1c;
+            --correct: #2e7d32;
+            --wrong: #c62828;
+            --telegram: #0088cc;
+            --telegram-dark: #006699;
+            --bg: #f4f6f9;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: var(--bg); color: #333; position: relative; min-height: 100vh; }
+
+        /* Background Watermark */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px;
+            height: 320px;
+            background-image: url('https://i.ibb.co.com/hFghg0hT/file-0000000070ec81fa8dafc95417eee3fb.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 8px 15px;
+            font-size: 17px;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .header-brand { display: flex; align-items: center; gap: 10px; }
+        .header-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #fff;
+            object-fit: cover;
+            border: 2px solid #fff;
+            flex-shrink: 0;
+        }
+
+        .container { max-width: 1200px; margin: 15px auto; padding: 0 10px; position: relative; z-index: 1; }
+        .card { background: rgba(255, 255, 255, 0.95); border-radius: 10px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 15px; }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        .btn:hover { background: var(--primary-dark); }
+        .btn-success { background: #28a745; }
+        .btn-secondary { background: #6c757d; }
+        .btn-telegram { background: var(--telegram); }
+        .btn-toggle {
+            background: #e2e8f0;
+            color: #2d3748;
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 4px;
+            border: 1px solid #cbd5e0;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: inline-block;
+            width: auto;
+        }
+
+        /* Independent Scroll Layout */
+        .exam-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: calc(100vh - 90px);
+        }
+
+        @media (min-width: 768px) {
+            .exam-container {
+                display: grid;
+                grid-template-columns: 1.2fr 0.8fr;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .question-panel {
+                height: 52vh !important;
+            }
+            .omr-panel {
+                height: 38vh !important;
+            }
+        }
+
+        .question-panel {
+            background: rgba(255, 255, 255, 0.93);
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: 100%;
+            -webkit-overflow-scrolling: touch;
+            transition: all 0.3s ease;
+        }
+
+        .q-section-header {
+            background: #e2e8f0;
+            color: #1a202c;
+            padding: 6px 10px;
+            font-weight: bold;
+            font-size: 15px;
+            border-radius: 4px;
+            margin: 15px 0 10px 0;
+            border-left: 4px solid var(--primary);
+        }
+
+        .q-card {
+            background: #f8f9fa;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 12px;
+        }
+        .q-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1a202c;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .q-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 12px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+        @media (max-width: 480px) {
+            .q-options-grid { grid-template-columns: 1fr; }
+        }
+
+        .omr-panel {
+            background: rgba(255, 255, 255, 0.93);
+            border-radius: 8px;
+            overflow-y: auto;
+            max-height: 100%;
+            padding: 15px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .subject-title {
+            background: var(--primary);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .omr-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .q-num { font-weight: bold; width: 35px; font-size: 14px; }
+        .options { display: flex; gap: 10px; }
+
+        .bubble {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            background: white;
+        }
+        .bubble.selected { background: #333; color: white; border-color: #333; }
+        .bubble.disabled { cursor: not-allowed; opacity: 0.8; }
+
+        .bubble.correct-ans { background: var(--correct) !important; color: white !important; border-color: var(--correct) !important; }
+        .bubble.wrong-ans { background: var(--wrong) !important; color: white !important; border-color: var(--wrong) !important; }
+
+        .timer-badge {
+            background: white;
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        /* Result Card Grid Styling */
+        .result-stats-box {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px 0;
+            background: #f8f9fa;
+            padding: 18px 10px;
+            border-radius: 10px;
+            border: 1px solid #edf2f7;
+        }
+        .stat-item {
+            flex: 1;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 26px;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #4a5568;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-brand">
+        <img src="https://i.ibb.co.com/hFghg0hT/file-0000000070ec81fa8dafc95417eee3fb.png" alt="Logo" class="header-logo">
+        <span>ভার্সিটি 'খ' মডেল টেস্ট</span>
+    </div>
+    <div id="timerContainer" class="hidden">
+        <span class="timer-badge">⏳ <span id="timer">45:00</span></span>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- STUDENT INSTRUCTION SCREEN -->
+    <div id="instructionPanel" class="card">
+        <h2 style="color: var(--primary); text-align: center; margin-bottom: 15px;">ভার্সিটি 'খ' মডেল টেস্ট - নির্দেশাবলী</h2>
+        <ul style="line-height: 1.8; margin-left: 20px; font-size: 15px;">
+            <li>এই পরীক্ষায় মোট <b>৬০টি</b> বহুনির্বাচনি প্রশ্ন (MCQ) রয়েছে।</li>
+            <li>বাংলা: <b>১৫টি (১-১৫)</b>, English: <b>১৫টি (১-১৫)</b>, সাধারণ জ্ঞান: <b>৩০টি (১-৩০)</b>।</li>
+            <li>পরীক্ষার মোট সময় <b>৪৫ মিনিট</b>। সময় শেষ হলে উত্তরপত্র স্বয়ংক্রিয়ভাবে জমা হয়ে যাবে।</li>
+            <li>প্রতিটি সঠিক উত্তরের জন্য <b>১ নম্বর</b> প্রদান করা হবে।</li>
+            <li>প্রতিটি ভুল উত্তরের জন্য <b>০.২৫ নম্বর</b> কাটা যাবে (Negative Marking: -0.25)।</li>
+            <li><b style="color: red;">সতর্কতা:</b> একটি অপশন একবার দাগানোর পর আর <b>পরিবর্তন করা যাবে না</b>।</li>
+            <li>প্রশ্নপত্র ও OMR শিট দুটি আলাদাভাবে স্বাধীনভাবে (independently) স্ক্রোল করতে পারবেন।</li>
+            <li style="margin-top: 8px;"><b>এইরকম আরও বেশি করে exam দিয়ে নিজেকে যাচাই করতে এখনই আমাদের telegram group এ যুক্ত হয়ে যাও telegram link: <a href="https://t.me/acsvarsitycourse" target="_blank" rel="noopener noreferrer" style="color: var(--telegram);">https://t.me/acsvarsitycourse</a></b></li>
+        </ul>
+        <button class="btn" onclick="startStudentExam()">Start Exam (পরীক্ষা শুরু করুন)</button>
+    </div>
+
+    <!-- EXAM SCREEN -->
+    <div id="examPanel" class="hidden">
+        <div class="exam-container">
+            <div class="question-panel card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: bold; color: var(--primary);">প্রশ্নপত্র</span>
+                    <button class="btn-toggle" id="toggleQBtn" onclick="toggleQuestionPanel()">➖ Minimise Questions</button>
+                </div>
+                <div id="questionBox"></div>
+            </div>
+            
+            <div class="omr-panel card">
+                <div class="subject-title">OMR Sheet</div>
+                <div id="studentOmrGrid"></div>
+                <button class="btn" onclick="submitExam(false)" style="margin-top: 20px;">Submit Exam (জমা দিন)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="resultPanel" class="card hidden" style="text-align: center;">
+        <h2 style="color: var(--primary);">পরীক্ষার ফলাফল</h2>
+        <div style="font-size: 44px; font-weight: bold; margin: 15px 0; color: #222;" id="scoreDisplay">0 / 60</div>
+
+        <!-- Correct, Wrong, Skipped Card with Gap Layout -->
+        <div class="result-stats-box">
+            <div class="stat-item">
+                <div class="stat-number" style="color: var(--correct);" id="correctCnt">0</div>
+                <div class="stat-label">সঠিক</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" style="color: var(--wrong);" id="wrongCnt">0</div>
+                <div class="stat-label">ভুল</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" style="color: #6c757d;" id="skippedCnt">0</div>
+                <div class="stat-label">স্কিপ</div>
+            </div>
+        </div>
+
+        <a href="https://t.me/acsvarsitycourse" target="_blank" rel="noopener noreferrer" class="btn btn-telegram" style="margin-bottom: 12px;">
+            ✈️ টেলিগ্রাম গ্রুপে যুক্ত হোন (Telegram Group)
+        </a>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-success" onclick="reviewExam()">১. সঠিক উত্তর গুলি দেখুন</button>
+            <button class="btn btn-secondary" onclick="retakeExam()">২. পুনরায় পরীক্ষা দিন</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const TOTAL_QUESTIONS = 60;
+    const EXAM_MINUTES = 45;
+
+    const questionsData = [
+        // বাংলা (১ - ১৫)
+        { section: "বাংলা (মডেল টেস্ট - ০৪)", q: "১. সাপুড়েদের সবচেয়ে লাভের ব্যবসা কোনটি?", opts: ["A. সাপ ধরা", "B. বিষ বিক্রি", "C. শিকড় বিক্রি", "D. মাদুলি বিক্রি"] },
+        { q: "২. 'যৌবনের গান' প্রবন্ধে লেখক কী হয়ে তরুণদের মহাদান গ্রহণ করতে চান?", opts: ["A. মধ্যমণি", "B. দলপতি", "C. সহযাত্রী", "D. পূজারি"] },
+        { q: "৩. বঙ্কিমচন্দ্র চট্টোপাধ্যায় এর মতে, কোনটি রচনার পরিপাটিয়ের জন্য বিশেষ হানিজানক?", opts: ["A. যশের জন্য লেখা", "B. অতিরিক্ত অলংকার", "C. বিদ্যা প্রকাশের চেষ্টা", "D. লিখেই প্রকাশ"] },
+        { q: "৪. 'পদ্মা' কবিতায় নির্ভীক জওয়ান কীসের ছন্দে নিঃসংশ্য?", opts: ["A. নির্লিপ্ত জীবনের", "B. জীবন-মৃত্যুর", "C. ভালো-মন্দের", "D. সত্য-মিথ্যার"] },
+        { q: "৫. 'কপটচারী' শব্দটির বাগধারা কোনটি?", opts: ["A. ভূশণ্ডির কাক", "B. ফাঁপর দালালি", "C. ভিজে বিড়াল", "D. হাভাতে"] },
+        { q: "৬. 'সৃষ্টি করার ইচ্ছা'-এর বাক্য সংকোচন কোনটি?", opts: ["A. সৃষ্টিশীল", "B. সিসৃক্ষা", "C. সৃজনশীল", "D. দিদৃক্ষা"] },
+        { q: "৭. মজিদ কার চোখে ভয় দেখেছে?", opts: ["A. আমেনার", "B. হাসুনির মার", "C. রহিমার", "D. জমিলার"] },
+        { q: "৮. “রেডিও টেলিভিশনে হরদম বলছে, সিচুয়েশন নর্ম্যাল”— এখানে বিদেশি শব্দের সংখ্যা কয়টি?", opts: ["A. ৪ টি", "B. ৫ টি", "C. ৬ টি", "D. কোনটিই নয়"] },
+        { q: "৯. 'গায়ে-হলুদ' কোন সমাসের উদাহরণ?", opts: ["A. দ্বন্দ্ব সমাস", "B. বহুব্রীহি সমাস", "C. তৎপুরুষ সমাস", "D. অব্যয়ীভাব সমাস"] },
+        { q: "১০. 'মহীরুহ' শব্দের সমার্থক শব্দ নিচের কোনটি?", opts: ["A. পল্লব", "B. প্রসূন", "C. পাদপ", "D. লতা"] },
+        { q: "১১. “সে ভুলেনি তো, এসেছে তা ফাল্গুনে সারিয়া।”— এই চরণে দ্বিস্বর যুক্ত শব্দ কোনটি?", opts: ["A. ভুলেনি", "B. এসেছে", "C. ফাল্গুনে", "D. সারিয়া"] },
+        { q: "১২. 'বাাপজান > বাজান', এখানে কোন ধরনের ধ্বনি পরিবর্তন ঘটেছে?", opts: ["A. অন্তর্হতি", "B. প্রগত সমীভবন", "C. অসমীকরণ", "D. অভিশ্রুতি"] },
+        { q: "১৩. কোনটি নিত্য পুরুষবাচক শব্দ?", opts: ["A. কৃতদার", "B. সজনি", "C. শ্রমিক", "D. সভাপতি"] },
+        { q: "১৪. অভিধানে কোন শব্দটি আগে বসবে?", opts: ["A. খুঁটি", "B. খোঁচা", "C. খোকা", "D. খেঁকশিয়াল"] },
+        { q: "১৫. কোনটি কৃদন্ত শব্দ?", opts: ["A. লিখিত", "B. মুখর", "C. ফুলেল", "D. হাতল"] },
+
+        // English (১ - ১৫)
+        { section: "English", q: "1. Had the rescue team arrived earlier, many lives ______.", opts: ["A. saved", "B. would save", "C. would have saved", "D. would have been saved"] },
+        { q: "2. \"All the perfumes of Arabia will not sweeten this little hand.\" Identify the literary device used in the sentence.", opts: ["A. Oxymoron", "B. Irony", "C. Metaphor", "D. Hyperbole"] },
+        { q: "3. The results of the experiment were inconclusive; ______, further testing is mandatory.", opts: ["A. furthermore", "B. nevertheless", "C. henceforth", "D. accordingly"] },
+        { q: "4. How does a digital camera ______ from a traditional film camera?", opts: ["A. difference", "B. different", "C. differ", "D. differential"] },
+        { q: "5. What is the best SYNONYM of 'Prudent'?", opts: ["A. Impulsive", "B. Uncanny", "C. Astute", "D. Injudicious"] },
+        { q: "6. What is the ANTONYM of \"Prodigious\"?", opts: ["A. Colossal", "B. Minuscule", "C. Immense", "D. Vast"] },
+        { q: "7. Each boy and each girl ______ given scholarships according to their marks in the GRE exam.", opts: ["A. is", "B. are", "C. was", "D. were"] },
+        { q: "8. The majority of the students ______ CA degree this year.", opts: ["A. has achieved", "B. achieves", "C. have achieved", "D. achieved"] },
+        { q: "9. Which of the following is incorrectly spelt word?", opts: ["A. Perseverence", "B. Dereference", "C. Irreverence", "D. Conference"] },
+        { q: "10. He was charged ______ theft, but later he was acquitted ______ the charges due to a lack of evidence.", opts: ["A. with, of", "B. for, from", "C. by, against", "D. in, with"] },
+        { q: "11. The government finally decided to ______ and implement the unpopular tax reform to save the economy.", opts: ["A. bite the bullet", "B. cry over spilled milk", "C. beat around the bush", "D. save face"] },
+        { q: "12. Insect: Disease :: War: ______?", opts: ["A. Army", "B. Defeat", "C. Arsenal", "D. Destruction"] },
+        { q: "13. He is not a traitor, ______.", opts: ["A. and neither am I", "B. I am not neither", "C. and so am I", "D. but aren't I"] },
+        { q: "14. He'll ______ my point of view, given a bit of time.", opts: ["A. come over", "B. come about", "C. come around", "D. come round to"] },
+        { q: "15. I went there and found him ill. (Transform into complex sentence)", opts: ["A. When I went there, I found him ill.", "B. Though I went there, I found him ill.", "C. I went there so that I found him ill.", "D. Since I went there and I found him ill."] },
+
+        // সাধারণ জ্ঞান (GK) (১ - ৩০)
+        { section: "সাধারণ জ্ঞান (মডেল টেস্ট - ০৪)", q: "১. বিশ্বের প্রথম মহাকাব্য 'গিলগামেশ' কোন সভ্যতার নিদর্শন?", opts: ["A. সুমেরীয় সভ্যতা", "B. ব্যাবিলনীয় সভ্যতা", "C. অ্যাশেরীয় সভ্যতা", "D. ক্যালেডীয় সভ্যতা"] },
+        { q: "২. ২০২৫ সালে শান্তিতে নোবেলজয়ী মারিয়া কোরিনা মাচাদো কোন দেশের নাগরিক?", opts: ["A. ভেনিজুয়েলা", "B. হাঙ্গেরি", "C. কিউবা", "D. কলম্বিয়া"] },
+        { q: "৩. ICCPR এর পূর্ণরূপ কী?", opts: ["A. International Conference on Civil and Political Rights", "B. International Conference of Civil and Political Rights", "C. International Covenant on Civil and Political Rights", "D. International Covenant of Civil and Political Rights"] },
+        { q: "৪. দক্ষিণ আফ্রিকায় 'বর্ণবাদ আইন' চালু হয় কত সালে?", opts: ["A. ১৯৩৯", "B. ১৯৪৮", "C. ১৯৭৫", "D. ১৯৯৪"] },
+        { q: "৫. হরমুজ প্রণালি কোন মহাসাগরের প্রবেশদ্বার হিসেবে কাজ করে?", opts: ["A. প্রশান্ত মহাসাগর", "B. আটলান্টিক মহাসাগর", "C. ভারত মহাসাগর", "D. উত্তর মহাসাগর"] },
+        { q: "৬. জি-৭ ভুক্ত একমাত্র এশিয়ার দেশ-", opts: ["A. দক্ষিণ কোরিয়া", "B. জাপান", "C. চীন", "D. ভিয়েতনাম"] },
+        { q: "৭. 'ইজমির' শহরটি কোন দেশে অবস্থিত?", opts: ["A. গ্রিস", "B. ইতালি", "C. তুরস্ক", "D. সাইপ্রাস"] },
+        { q: "৮. 'RSP' কোন দেশের রাজনৈতিক দল?", opts: ["A. ভারত", "B. নেপাল", "C. শ্রীলঙ্কা", "D. মিয়ানমার"] },
+        { q: "৯. ডলারকে আন্তর্জাতিক মুদ্রা হিসেবে স্বীকৃতি দেওয়া হয়-", opts: ["A. ভার্জিনিয়া সম্মেলনে", "B. ব্রেটন উডস সম্মেলনে", "C. ডাম্বারটন ওকস সম্মেলনে", "D. ইয়াল্টা সম্মেলনে"] },
+        { q: "১০. 'দ্যাগ হ্যামারশোল্ড পদক' প্রদান করা হয়-", opts: ["A. জাতিসংঘের নোবেলজয়ী মহাসচিবদের", "B. জাতিসংঘের শান্তিরক্ষা কার্যক্রমে নিহত সৈন্যদের", "C. জাতিসংঘের স্বাস্থ্যসেবা কার্যক্রমে বিশেষ অবদান রাখা ব্যক্তিদের", "D. জাতিসংঘ মনোনীত মানবাধিকার কর্মীদের"] },
+        { q: "১১. হেনলি পাসপোর্ট সূচক ২০২৬ অনুযায়ী শীর্ষ দেশ কোনটি?", opts: ["A. জার্মানি", "B. জাপান", "C. সিঙ্গাপুর", "D. যুক্তরাষ্ট্র"] },
+        { q: "১২. ইউরেশিয়ায় একটি নতুন নিরাপত্তা কাঠামো গড়ে তুলছে কোন সংস্থা?", opts: ["A. NATO", "B. BRICS", "C. SCO", "D. QUAD"] },
+        { q: "১৩. কমনওয়েলথের বর্তমান মহাসচিব হিসেবে দায়িত্ব পালন করছেন-", opts: ["A. কমলেশ শর্মা", "B. শার্লি এয়ারকর বোচওয়ে", "C. পাত্রে ওজুলো", "D. মাইকেল ভ্যান পিটার"] },
+        { q: "১৪. অক্সফ্যামের সদর দপ্তর কোথায় অবস্থিত?", opts: ["A. লন্ডন, যুক্তরাজ্য", "B. অক্সফোর্ডশায়ার, যুক্তরাজ্য", "C. নাইরোবি, কেনিয়া", "D. ম্যানিলা, ফিলিপাইন"] },
+        { q: "১৫. ইরানের 'বাসিজ' বাহিনী কোন কাজে নিয়োজিত?", opts: ["A. বিদেশি সামরিক অভিযান", "B. দেশের অভ্যন্তরীণ নিরাপত্তা নিয়ন্ত্রণ", "C. আন্তর্জাতিক শান্তি মিশন", "D. দেশের সীমান্ত নিরাপত্তা নিয়ন্ত্রণ"] },
+        { q: "১৬. ইসরায়েলের বর্তমান প্রধানমন্ত্রী বেনিয়ামিন নেতানিয়াহু কোন রাজনৈতিক দলের সদস্য?", opts: ["A. লেবার পার্টি", "B. লিকুদ পার্টি", "C. হাদাস-তাল", "D. ইউনাইটেড আরব লিস্ট"] },
+        { q: "১৭. 'কিতাবুল হিন্দ' গ্রন্থের লেখক-", opts: ["A. আল বিরুনি", "B. ওমর খৈয়াম", "C. ইবনে খালদুন", "D. ইবনে বতুতা"] },
+        { q: "১৮. ম্যাগনাটার্টা স্বাক্ষরিত হয়-", opts: ["A. ১২১৫ সালে", "B. ১৩২৭ সালে", "C. ১৫৮৮ সালে", "D. ১৬০০ সালে"] },
+        { q: "১৯. 'ফিল্যাডেলফি করিডোর' বর্তমানে কোন দেশের দখলে রয়েছে?", opts: ["A. যুক্তরাষ্ট্র", "B. ইসরায়েল", "C. মিশর", "D. যুক্তরাজ্য"] },
+        { q: "২০. বিশ্ব বিনিয়োগ প্রতিবেদন প্রকাশ করে কোন সংস্থা?", opts: ["A. UNCTAD", "B. UNDP", "C. World Bank", "D. IMF"] },
+        { q: "২১. বিশ্বের সর্বোচ্চ রেলসেতু কোথায় অবস্থিত?", opts: ["A. তুরস্কে", "B. ভারতে", "C. পাকিস্তানে", "D. জাপানে"] },
+        { q: "২২. পৃথিবীর প্রথম দেশ হিসেবে জলবায়ু আইন চালু করে কোন দেশ?", opts: ["A. ভুটান", "B. কানাডা", "C. ফিনল্যান্ড", "D. মালদ্বীপ"] },
+        { q: "২৩. আন্তর্জাতিক নদী রক্ষা দিবস কবে পালিত হয়?", opts: ["A. ৩ মার্চ", "B. ১৪ মার্চ", "C. ২১ মার্চ", "D. ২২ মার্চ"] },
+        { q: "২৪. বায়ুমণ্ডলের কোন স্তরে ওজনস্তর রয়েছে?", opts: ["A. স্ট্র্যাটোমণ্ডল", "B. ট্রপোমণ্ডল", "C. অয়নমণ্ডল", "D. তাপমণ্ডল"] },
+        { q: "২৫. Cloudburst বলতে বোঝায় -", opts: ["A. দীর্ঘমেয়াদি ভারী বৃষ্টি", "B. মৌসুমি ভারী বর্ষা", "C. সংকীর্ণ এলাকায় হঠাৎ ঘন বৃষ্টি", "D. ঘন তুষারপাত"] },
+        { q: "২৬. DLS শব্দটি কোন খেলার সাথে সম্পর্কিত?", opts: ["A. হকি", "B. টেনিস", "C. ক্রিকেট", "D. দাবা"] },
+        { q: "২৭. বাইনারি সংখ্যা 10111 এর সমতুল্য দশমিক সংখ্যা-", opts: ["A. 22", "B. 23", "C. 31", "D. 43"] },
+        { q: "২৮. আধুনিক অর্থনীতির প্রবক্তা কে?", opts: ["A. জন এম. কেইনস", "B. পল স্যামুয়েলসন", "C. র‍্যাগনার নার্কস", "D. অ্যাডাম স্মিথ"] },
+        { q: "২৯. RADAR এর পূর্ণরূপ-", opts: ["A. Radio Detection and Ranging", "B. Radio Director and Ranging", "C. Raw Detection and Ranging", "D. Radio Delocation and Ranging"] },
+        { q: "৩০. কোন দেশের উদ্যোগে OPEC প্রতিষ্ঠিত হয়?", opts: ["A. সৌদি আরব", "B. যুক্তরাজ্য", "C. অস্ট্রিয়া", "D. ভেনিজুয়েলা"] }
+    ];
+
+    const correctAnswers = {
+        // বাংলা (1-15)
+        "Q_1": "C", "Q_2": "C", "Q_3": "C", "Q_4": "B", "Q_5": "C",
+        "Q_6": "B", "Q_7": "C", "Q_8": "B", "Q_9": "B", "Q_10": "D",
+        "Q_11": "B", "Q_12": "A", "Q_13": "A", "Q_14": "A", "Q_15": "A",
+
+        // English (16-30)
+        "Q_16": "D", "Q_17": "D", "Q_18": "D", "Q_19": "C", "Q_20": "C",
+        "Q_21": "B", "Q_22": "C", "Q_23": "C", "Q_24": "A", "Q_25": "A",
+        "Q_26": "A", "Q_27": "D", "Q_28": "A", "Q_29": "D", "Q_30": "A",
+
+        // GK (31-60)
+        "Q_31": "A", "Q_32": "A", "Q_33": "C", "Q_34": "B", "Q_35": "C",
+        "Q_36": "B", "Q_37": "C", "Q_38": "B", "Q_39": "B", "Q_40": "B",
+        "Q_41": "C", "Q_42": "C", "Q_43": "B", "Q_44": "C", "Q_45": "B",
+        "Q_46": "B", "Q_47": "A", "Q_48": "A", "Q_49": "B", "Q_50": "A",
+        "Q_51": "B", "Q_52": "B", "Q_53": "B", "Q_54": "A", "Q_55": "C",
+        "Q_56": "C", "Q_57": "B", "Q_58": "B", "Q_59": "A", "Q_60": "D"
+    };
+
+    let userAnswers = {};
+    let timerId = null;
+    let isReviewMode = false;
+    let isQMinimized = false;
+
+    function renderQuestions() {
+        const qBox = document.getElementById('questionBox');
+        let html = '';
+        questionsData.forEach((item) => {
+            if (item.section) {
+                html += `<div class="q-section-header">${item.section}</div>`;
+            }
+            html += `
+                <div class="q-card">
+                    <div class="q-title">${item.q}</div>
+                    <div class="q-options-grid">
+                        ${item.opts.map(opt => `<div>${opt}</div>`).join('')}
+                    </div>
+                </div>
+            `;
+        });
+        qBox.innerHTML = html;
+    }
+
+    function toggleQuestionPanel() {
+        const qBox = document.getElementById('questionBox');
+        const btn = document.getElementById('toggleQBtn');
+        isQMinimized = !isQMinimized;
+        if (isQMinimized) {
+            qBox.classList.add('hidden');
+            btn.textContent = '➕ Expand Questions';
+        } else {
+            qBox.classList.remove('hidden');
+            btn.textContent = '➖ Minimise Questions';
+        }
+    }
+
+    function createOmrRow(key, displayNum) {
+        const selectedOpt = userAnswers[key];
+        return `
+        <div class="omr-row" id="row-${key}">
+            <span class="q-num">${displayNum}.</span>
+            <div class="options">
+                ${['A', 'B', 'C', 'D'].map(opt => {
+                    const isSel = selectedOpt === opt;
+                    const isDisabled = !!selectedOpt;
+                    return `
+                    <div class="bubble ${isSel ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}" 
+                         onclick="handleBubbleClick('${key}', '${opt}', this)">
+                        ${opt}
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    }
+
+    function renderStudentOmr() {
+        let html = '';
+
+        // বাংলা (১-১৫)
+        html += `<div class="q-section-header" style="margin-top:0;">বাংলা (১-১৫)</div>`;
+        for (let i = 1; i <= 15; i++) {
+            html += createOmrRow(`Q_${i}`, i);
+        }
+
+        // English (১-১৫)
+        html += `<div class="q-section-header">English (১-১৫)</div>`;
+        for (let i = 16; i <= 30; i++) {
+            html += createOmrRow(`Q_${i}`, i - 15);
+        }
+
+        // সাধারণ জ্ঞান (১-৩০)
+        html += `<div class="q-section-header">সাধারণ জ্ঞান (১-৩০)</div>`;
+        for (let i = 31; i <= 60; i++) {
+            html += createOmrRow(`Q_${i}`, i - 30);
+        }
+
+        document.getElementById('studentOmrGrid').innerHTML = html;
+    }
+
+    function handleBubbleClick(qKey, option, element) {
+        if (isReviewMode) return;
+        if (userAnswers[qKey]) return; // Non-changeable once selected
+
+        userAnswers[qKey] = option;
+        const row = document.getElementById(`row-${qKey}`);
+        const bubbles = row.querySelectorAll('.bubble');
+        
+        bubbles.forEach(b => {
+            b.classList.add('disabled');
+            if (b.innerText.trim() === option) {
+                b.classList.add('selected');
+            }
+        });
+    }
+
+    function startStudentExam() {
+        document.getElementById('instructionPanel').classList.add('hidden');
+        document.getElementById('examPanel').classList.remove('hidden');
+        document.getElementById('timerContainer').classList.remove('hidden');
+
+        userAnswers = {};
+        isReviewMode = false;
+        renderQuestions();
+        renderStudentOmr();
+
+        let timeLeft = EXAM_MINUTES * 60;
+        const timerDisplay = document.getElementById('timer');
+
+        if(timerId) clearInterval(timerId);
+        
+        timerId = setInterval(() => {
+            timeLeft--;
+            let mins = Math.floor(timeLeft / 60);
+            let secs = timeLeft % 60;
+            timerDisplay.textContent = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerId);
+                alert('সময় শেষ! আপনার উত্তরপত্র জমা নেওয়া হচ্ছে।');
+                submitExam(true);
+            }
+        }, 1000);
+    }
+
+    function submitExam(isAuto = false) {
+        if (!isAuto) {
+            const answeredCount = Object.keys(userAnswers).length;
+            if (answeredCount < TOTAL_QUESTIONS) {
+                if (!confirm(`আপনি ${TOTAL_QUESTIONS}টির মধ্যে ${answeredCount}টি উত্তর করেছেন। উত্তরপত্র জমা দিতে চান?`)) {
+                    return;
+                }
+            }
+        }
+
+        clearInterval(timerId);
+        document.getElementById('timerContainer').classList.add('hidden');
+        document.getElementById('examPanel').classList.add('hidden');
+        document.getElementById('resultPanel').classList.remove('hidden');
+
+        calculateResult();
+    }
+
+    function calculateResult() {
+        let correct = 0;
+        let wrong = 0;
+        let skipped = 0;
+
+        for (let i = 1; i <= TOTAL_QUESTIONS; i++) {
+            const key = `Q_${i}`;
+            const userAns = userAnswers[key];
+            const correctAns = correctAnswers[key];
+
+            if (!userAns) {
+                skipped++;
+            } else if (userAns === correctAns) {
+                correct++;
+            } else {
+                wrong++;
+            }
+        }
+
+        const score = (correct * 1.0) - (wrong * 0.25);
+
+        document.getElementById('scoreDisplay').innerText = `${score.toFixed(2)} / ${TOTAL_QUESTIONS}`;
+        document.getElementById('correctCnt').innerText = correct;
+        document.getElementById('wrongCnt').innerText = wrong;
+        document.getElementById('skippedCnt').innerText = skipped;
+    }
+
+    function reviewExam() {
+        isReviewMode = true;
+        document.getElementById('resultPanel').classList.add('hidden');
+        document.getElementById('examPanel').classList.remove('hidden');
+
+        for (let i = 1; i <= TOTAL_QUESTIONS; i++) {
+            const key = `Q_${i}`;
+            const row = document.getElementById(`row-${key}`);
+            if (!row) continue;
+
+            const bubbles = row.querySelectorAll('.bubble');
+            const userAns = userAnswers[key];
+            const correctAns = correctAnswers[key];
+
+            bubbles.forEach(b => {
+                const optText = b.innerText.trim();
+                b.className = 'bubble disabled'; // reset class
+
+                if (optText === correctAns) {
+                    b.classList.add('correct-ans');
+                }
+                if (userAns && userAns === optText && userAns !== correctAns) {
+                    b.classList.add('wrong-ans');
+                }
+            });
+        }
+
+        alert('সঠিক উত্তরগুলো সবুজ এবং আপনার ভুল উত্তরগুলো লাল রঙে দেখানো হচ্ছে।');
+    }
+
+    function retakeExam() {
+        document.getElementById('resultPanel').classList.add('hidden');
+        document.getElementById('instructionPanel').classList.remove('hidden');
+    }
+</script>
+
+</body>
+  </html>
